@@ -18,11 +18,12 @@ library(ggpubr)
 data("instacart")
 max(instacart$aisle_id)
 
-
+# count the items in each aisle
 aisle_count<-instacart %>% 
   group_by(aisle_id,aisle) %>% 
   dplyr::summarise(n=dplyr::n()) 
-  
+
+#filter the aisle with most counts  
 aisle_most<-aisle_count %>% 
             filter(n==max(aisle_count$n))
 
@@ -72,6 +73,7 @@ There are ``r max(instacart$aisle_id)`` aisles and ``r aisle_most$aisle`` is the
 
 
 ```{r}
+# the plot
 aisle_count %>% 
   filter(n>10000) %>%
   ggplot(aes(x=aisle,y=n))+
@@ -95,6 +97,7 @@ In the plot, the x-axis is `aisle` with more than 10000 items and y-axis is the 
 
 
 ```{r}
+# choose three most popular items in each aisle respectively
 baking<-instacart %>% 
   filter(aisle=="baking ingredients") %>% 
   select(product_name,aisle) %>%    
@@ -103,7 +106,6 @@ baking<-instacart %>%
   arrange(.,desc(n)) %>% 
   top_n(.,3) %>%  
   plyr::rename(.,c(product_name="baking ingredients")) 
-
 
 dog_food<-instacart %>% 
   filter(aisle=="dog food care") %>% 
@@ -123,6 +125,7 @@ packaged_vegetables<-instacart %>%
   top_n(.,3) %>% 
   plyr::rename(.,c(product_name="packaged vegetables fruits")) 
 
+# make a table showing the result
 Most_popu_items<-cbind(baking,dog_food,packaged_vegetables) %>% 
                  knitr::kable(format="html")
 
@@ -139,6 +142,7 @@ The top three most popular items in the `packaged vegetables fruits` aisle are `
 
 
 ```{r}
+# make the table
 instacart %>% 
 filter(product_name=="Coffee Ice Cream"|product_name=="Pink Lady Apples") %>% 
                   select(order_dow,order_hour_of_day,product_name) %>%
@@ -158,7 +162,7 @@ The table concludes the mean hour of the day at which Pink Lady Apples and Coffe
 ## Problem 2
 ```{r}
 data("brfss_smart2010")
-
+# some data cleaning
 brfss_smart<-brfss_smart2010 %>% 
   janitor::clean_names() %>%
   filter(topic=="Overall Health") %>% 
@@ -168,6 +172,7 @@ brfss_smart<-brfss_smart2010 %>%
                       level=c("Poor","Fair","Good","Very good","Excellent"))
   ) 
 
+# filter states with 7 or more locations in 2002 and 2010 and make the table
 more_locations_2002<-brfss_smart %>% 
                      filter(year=="2002") %>%
                      select(locationabbr,locationdesc) %>%
@@ -208,13 +213,15 @@ From the table `more_locations_2002` ,we can know that there are 6 states with l
 From the table `more_locations_2010` ,we can know that there are 14 states with locations more than 7 including `CA`,`CO`,`FL`,`MA`,`MD`,`NC`,`NE`,`NJ`,`NY`,`OH`,`PA`,`SC`,`TX`,`WA`.
 
 
-```{r}  
+```{r} 
+# construct a new data set
 year_state<-brfss_smart %>%
             filter(response=="Excellent") %>% 
             select(year,locationabbr,data_value) %>% 
             group_by(year,locationabbr) %>% 
             summarise(aver=mean(data_value)) 
 
+# make the plot
 ggplot(data=year_state,aes(x=year,y=aver,group=locationabbr))+
   geom_line(aes(color=locationabbr))+
   labs(
@@ -242,7 +249,7 @@ In the plot, the x-axis is `year` and the y-axis is `average of data value` ,
 different colors means different states, the trend of line means the change of average of data value in one specific state. 
 
 ```{r}
-
+# make a two-panel plot
 two_panel<-brfss_smart %>% 
            filter(locationabbr=="NY") %>% 
            filter(year=="2010"|year=="2006") %>% 
@@ -255,10 +262,12 @@ plot_2006<-two_panel %>%
            labs(
     x="Response",
     y="Data Value",
-    title="Year 2006"
+    title="The Distribution of \nData Value for Response",
+    subtitle = "Year 2006"
   )+
  theme(
-  plot.title = element_text(hjust = 0,color = "black"),
+  plot.title = element_text(hjust = 0,color = "black",face = "bold"),
+  plot.subtitle = element_text(color="red"),
   legend.position = "bottom",
   legend.direction = "vertical"
 
@@ -271,15 +280,17 @@ plot_2010<-two_panel %>%
            labs(
     x="Response",
     y="Data Value",
-    title="Year 2010"
+    title="The Distribution of \nData Value for Response",
+    subtitle = "Year 2010"
   )+
  theme(
-  plot.title = element_text(hjust = 0,color = "black"),
+  plot.title = element_text(hjust = 0,color = "black",face = "bold"),
+  plot.subtitle = element_text(color = "red"),
    legend.position = "bottom",
   legend.direction = "vertical")
 
-plot_2006+plot_2010 
-
+plot_2006+plot_2010
+  
 ```
 
 **Summary**
@@ -292,17 +303,28 @@ In the plot, the x-axis is different levels of response from `Poor` to `Excellen
 ```{r}  
 
 accel_data<-read_csv("accel_data.csv") 
-          
+
+# make a table showing           
 accel_data %>% 
-        janitor::clean_names() %>% 
+  janitor::clean_names() %>%
+    mutate(
+  day = factor(day,level=
+                    c("Sunday",
+                      "Monday",
+                      "Tuesday",
+                      "Wednesday",
+                      "Thursday",
+                      "Friday",
+                      "Saturday"),ordered = TRUE)) %>% 
         mutate(day_cate=ifelse(day=="Saturday"|
-                               day=="Sunday","weekend","weekday")) %>%   
+                               day=="Sunday","weekend","weekday")) %>%
         mutate(.,total = rowSums(.[,4:1443])) %>%
-        select(week,day,total) %>% 
+        select(week,day,total) %>%
+        arrange(.,day) %>% 
         pivot_wider(
           names_from  = "day",
           values_from = "total"
-        ) %>%  
+        ) %>% 
   knitr::kable(format="html")
 
 
@@ -311,14 +333,14 @@ accel_data %>%
 
 *accel_data*
 
-In the `accel_data` dataset, there are ``r nrow(accel_data)`` observations and ``r ncol(accel_data)`` variables.
-
+In the `accel_data` dataset, there are ``r nrow(accel_data)`` observations and ``r ncol(accel_data)`` variables. `week` means which week `day_id` and `day` indicate which day in that week. From `activity.1` to `activity.1440` means minutes in per day.
+ 
 *table*
 
 From the table, we can know the total activity counts in one specific week and specific day.
 
 ```{r}
-
+# make the table for plot
 day_plot<-read_csv("accel_data.csv") %>% 
         janitor::clean_names() %>%
         pivot_longer(
@@ -329,14 +351,13 @@ day_plot<-read_csv("accel_data.csv") %>%
         ) %>% 
 mutate(
   activity=factor(activity,level=c(1:1440),ordered = T)
-) %>% view
+) 
 
-
-  
-
+# plot
 day_plot %>% 
   ggplot(aes(x=activity ,y=acce_value,color=day,group=day))+
-  geom_line()+
+
+    geom_line()+
   viridis::scale_color_viridis(discrete = TRUE)+
   labs(
     y="Accelerometer Data",
@@ -344,6 +365,7 @@ day_plot %>%
   )
 
 ```
+
 **Summary**
 
 *day_plot*
