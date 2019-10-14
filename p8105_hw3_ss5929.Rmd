@@ -1,0 +1,372 @@
+---
+title: "p8105_hw3_ss5929"
+author: "Shuyi SHEN"
+date: "10/4/2019"
+output: github_document
+---
+
+## Problem 1 
+```{r}
+library(p8105.datasets)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(kableExtra)
+library(patchwork)
+library(ggpubr)
+
+data("instacart")
+max(instacart$aisle_id)
+
+
+aisle_count<-instacart %>% 
+  group_by(aisle_id,aisle) %>% 
+  dplyr::summarise(n=dplyr::n()) 
+  
+aisle_most<-aisle_count %>% 
+            filter(n==max(aisle_count$n))
+
+
+```
+**Summary**
+
+*instacart*
+
+There are `r nrow(instacart)` obeservations and `r ncol(instacart)` variables in the `instacart` dataset. The variables include:
+
+``r colnames(instacart)[1] ``: order identifier
+
+``r colnames(instacart)[2] ``: product identifier
+
+``r colnames(instacart)[3] ``: order in which each product was added to cart
+
+``r colnames(instacart)[4] ``: 1 if this prodcut has been ordered by this user in the past, 0 otherwise
+
+``r colnames(instacart)[5] ``: customer identifier
+
+``r colnames(instacart)[6] ``: which evaluation set this order belongs in 
+
+``r colnames(instacart)[7] ``: the order sequence number for this user 
+
+``r colnames(instacart)[8] ``: the day of the week on which the order was placed
+
+``r colnames(instacart)[9] ``: the hour of the day on which the order was placed
+
+``r colnames(instacart)[10] ``: days since the last order
+
+``r colnames(instacart)[11] ``: name of the product
+
+``r colnames(instacart)[12] ``: aisle identifier
+
+``r colnames(instacart)[13] ``: department identifier
+
+``r colnames(instacart)[14] ``: the name of the aisle
+
+``r colnames(instacart)[15] ``: the name of the department
+
+For example, in the first line, the user 112108 order the Bulgarian Yogurt in te yogurt aisle in dairy department. Its aisle id is 120, department id is 16 and product_id is 49302. The order is placed at 10 on Thursday, it has been reordered before and it is the first product added in the cart.
+
+From my point of view, the key variables are ``r colnames(instacart)[4]``, ``r colnames(instacart)[7:11]``, ``r colnames(instacart)[14:15]``
+
+There are ``r max(instacart$aisle_id)`` aisles and ``r aisle_most$aisle`` is the aisle that most items ordered from.
+
+
+```{r}
+aisle_count %>% 
+  filter(n>10000) %>%
+  ggplot(aes(x=aisle,y=n))+
+  geom_bar(stat = "identity")+
+  labs(
+    title="The Number of Items in Each Aisle",
+    subtitle = "Aisles with more than 10000 items",
+    x="Aisle",
+    y="count"
+  )+
+  theme(plot.title = element_text(hjust=0.5))+
+  theme(plot.subtitle = element_text(hjust=0.5))+
+  theme(axis.text.x = element_text(angle=70, hjust=1))+
+  viridis::scale_color_viridis(discrete = TRUE)
+```
+**Summary**
+
+*plot*
+
+In the plot, the x-axis is `aisle` with more than 10000 items and y-axis is the number of items in each aisle. In the plot, we can see in the `fresh fruits` aisle and `fresh vegetables` aisle have obviously more items ordered than other aisles.
+
+
+```{r}
+baking<-instacart %>% 
+  filter(aisle=="baking ingredients") %>% 
+  select(product_name,aisle) %>%    
+  group_by(product_name) %>% 
+  dplyr::summarise(n=dplyr::n()) %>% 
+  arrange(.,desc(n)) %>% 
+  top_n(.,3) %>%  
+  plyr::rename(.,c(product_name="baking ingredients")) 
+
+
+dog_food<-instacart %>% 
+  filter(aisle=="dog food care") %>% 
+  select(product_name,aisle) %>%    
+  group_by(product_name) %>% 
+  dplyr::summarise(n=dplyr::n()) %>% 
+  arrange(.,desc(n)) %>% 
+  top_n(.,3) %>%  
+  plyr::rename(.,c(product_name="dog food care"))
+
+packaged_vegetables<-instacart %>% 
+  filter(aisle=="packaged vegetables fruits") %>% 
+  select(product_name,aisle) %>%    
+  group_by(product_name) %>% 
+  dplyr::summarise(n=dplyr::n()) %>% 
+  arrange(.,desc(n)) %>% 
+  top_n(.,3) %>% 
+  plyr::rename(.,c(product_name="packaged vegetables fruits")) 
+
+Most_popu_items<-cbind(baking,dog_food,packaged_vegetables) %>% 
+                 knitr::kable(format="html")
+
+Most_popu_items
+```
+**Summary**
+
+We can see the top three most popular items in the `baking ingredients`
+aisle are `Light Brown Sugar` with `499` orders, `Pure Baking Soda` with `387` orders and `Cane Sugar` with `336` orders.
+
+The top three most popular items in the `dog food care` aisle are`Snack Sticks Chicken & Rice Recipe Dog Treats` with `30` orders, `Organix Chicken & Brown Rice Recipe` with `28` orders and `Small Dog Biscuits` with `26` orders.
+
+The top three most popular items in the `packaged vegetables fruits` aisle are `Organic Baby Spinach` with `9784` orders, `Organic Raspberries` with `5546` orders and `Organic Blueberries` with `4966` orders.
+
+
+```{r}
+instacart %>% 
+filter(product_name=="Coffee Ice Cream"|product_name=="Pink Lady Apples") %>% 
+                  select(order_dow,order_hour_of_day,product_name) %>%
+                  group_by(order_dow,product_name) %>% 
+                  summarize_at(vars(order_hour_of_day),funs(mean(.,))) %>%
+                  pivot_wider(
+                    names_from = "order_dow",
+                    values_from = "order_hour_of_day"
+                  ) %>% 
+  knitr::kable(format = "html")
+```
+**Summary**
+
+The table concludes the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week. 
+
+
+## Problem 2
+```{r}
+data("brfss_smart2010")
+
+brfss_smart<-brfss_smart2010 %>% 
+  janitor::clean_names() %>%
+  filter(topic=="Overall Health") %>% 
+  mutate( 
+    response = factor(response,
+                      ordered = TRUE,
+                      level=c("Poor","Fair","Good","Very good","Excellent"))
+  ) 
+
+more_locations_2002<-brfss_smart %>% 
+                     filter(year=="2002") %>%
+                     select(locationabbr,locationdesc) %>%
+                     base::unique() %>% 
+                     group_by(locationabbr) %>% 
+                     summarise(n=n()) %>% 
+                     filter(n>=7) %>%
+                     t()
+
+more_locations_2002 %>% 
+knitr::kable(format = "html")
+
+more_locations_2010<-brfss_smart %>% 
+                     filter(year=="2010") %>%
+                     select(locationabbr,locationdesc) %>% 
+                     base::unique() %>% 
+                     group_by(locationabbr) %>% 
+                     summarise(n=n()) %>% 
+                     filter(n>=7) %>% 
+                     t() 
+
+more_locations_2010 %>% 
+knitr::kable(format = "html")
+
+```
+**Summary**
+
+*brfss_smart2010*
+
+In the `brfss_smart2010` dataset, there are ``r nrow(brfss_smart2010)`` obeservations with ``r ncol(brfss_smart2010)`` variables including ``r colnames(brfss_smart)``
+
+*more_locations_2002*
+
+From the table `more_locations_2002` ,we can know that there are 6 states with locations more than 7 including `CT`,`FL`,`MA`,`NC`,`NJ`,`PA`.
+
+*more_locations_2010*
+
+From the table `more_locations_2010` ,we can know that there are 14 states with locations more than 7 including `CA`,`CO`,`FL`,`MA`,`MD`,`NC`,`NE`,`NJ`,`NY`,`OH`,`PA`,`SC`,`TX`,`WA`.
+
+
+```{r}  
+year_state<-brfss_smart %>%
+            filter(response=="Excellent") %>% 
+            select(year,locationabbr,data_value) %>% 
+            group_by(year,locationabbr) %>% 
+            summarise(aver=mean(data_value)) 
+
+ggplot(data=year_state,aes(x=year,y=aver,group=locationabbr))+
+  geom_line(aes(color=locationabbr))+
+  labs(
+    x="Year",
+    y="Average of data value",
+    title="Mean of Data Value in Different States Across Years"
+  )+
+  scale_x_continuous(
+    breaks=c(2002:2010)
+  )+
+  scale_y_continuous(
+    breaks=c(0:30)
+  )
+
+```
+**Summary**
+
+*year_state*
+
+The table shows the average `data_value` in one state one year. And we can see that the trend is totally decreasing. The lowest is WA.
+
+*plot*
+
+In the plot, the x-axis is `year` and the y-axis is `average of data value` ,
+different colors means different states, the trend of line means the change of average of data value in one specific state. 
+
+```{r}
+
+two_panel<-brfss_smart %>% 
+           filter(locationabbr=="NY") %>% 
+           filter(year=="2010"|year=="2006") %>% 
+           select(year,locationabbr,data_value,response,locationdesc) 
+
+plot_2006<-two_panel %>% 
+           filter(year=="2006") %>% 
+           ggplot(aes(x=response,y=data_value,color=locationdesc,group=locationdesc))+
+           geom_point()+geom_line()+
+           labs(
+    x="Response",
+    y="Data Value",
+    title="Year 2006"
+  )+
+ theme(
+  plot.title = element_text(hjust = 0,color = "black"),
+  legend.position = "bottom",
+  legend.direction = "vertical"
+
+) 
+
+plot_2010<-two_panel %>% 
+           filter(year=="2010") %>% 
+           ggplot(aes(x=response,y=data_value,color=locationdesc,group=locationdesc))+
+           geom_point()+geom_path()+
+           labs(
+    x="Response",
+    y="Data Value",
+    title="Year 2010"
+  )+
+ theme(
+  plot.title = element_text(hjust = 0,color = "black"),
+   legend.position = "bottom",
+  legend.direction = "vertical")
+
+plot_2006+plot_2010 
+
+```
+
+**Summary**
+
+*plot*
+
+In the plot, the x-axis is different levels of response from `Poor` to `Excellent`, y-axis is `data_value` and different colors means different locations in NY. 
+
+## Problem 3
+```{r}  
+
+accel_data<-read_csv("accel_data.csv") 
+          
+accel_data %>% 
+        janitor::clean_names() %>% 
+        mutate(day_cate=ifelse(day=="Saturday"|
+                               day=="Sunday","weekend","weekday")) %>%   
+        mutate(.,total = rowSums(.[,4:1443])) %>%
+        select(week,day,total) %>% 
+        pivot_wider(
+          names_from  = "day",
+          values_from = "total"
+        ) %>%  
+  knitr::kable(format="html")
+
+
+```
+**Summary**
+
+*accel_data*
+
+In the `accel_data` dataset, there are ``r nrow(accel_data)`` observations and ``r ncol(accel_data)`` variables.
+
+*table*
+
+From the table, we can know the total activity counts in one specific week and specific day.
+
+```{r}
+
+day_plot<-read_csv("accel_data.csv") %>% 
+        janitor::clean_names() %>%
+        pivot_longer(
+          activity_1:activity_1440,
+          names_to = "activity",
+          values_to = "acce_value",
+          names_prefix = "activity_"
+        ) %>% 
+mutate(
+  activity=factor(activity,level=c(1:1440),ordered = T)
+) %>% view
+
+
+  
+
+day_plot %>% 
+  ggplot(aes(x=activity ,y=acce_value,color=day,group=day))+
+  geom_line()+
+  viridis::scale_color_viridis(discrete = TRUE)+
+  labs(
+    y="Accelerometer Data",
+    title = "24 hours Activity for Each Day"
+  )
+
+```
+**Summary**
+
+*day_plot*
+
+In the plot, the x-axis is activity and y-axis is accelerometer data, different colors mean different days. From the plot, we can see the value is totally lowest at midnight and highest during evening and lunch.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
